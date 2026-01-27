@@ -1,0 +1,101 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+use work.network_types.all;
+
+entity bitonic_network is
+    generic (
+        n : integer := 8;
+        width : integer := 16
+    );
+    Port (
+        inputs  : in mem(0 to n - 1)(width - 1 downto 0); 
+        outputs : out  mem(0 to n - 1)(width - 1 downto 0)       
+    );
+end bitonic_network;
+
+architecture Behavioral of bitonic_network is
+    signal outputs_array : mem(0 to n - 1)(width - 1 downto 0) := (others => (others => '0'));
+    signal w_l_0 : std_logic_vector(width - 1 downto 0);
+    signal w_h_0 : std_logic_vector(width - 1 downto 0);
+    signal w_l_1 : std_logic_vector(width - 1 downto 0);
+    signal w_h_1 : std_logic_vector(width - 1 downto 0);
+    signal w_l_2 : std_logic_vector(width - 1 downto 0);
+    signal w_h_2 : std_logic_vector(width - 1 downto 0);
+    signal w_l_3 : std_logic_vector(width - 1 downto 0);
+    signal w_h_3 : std_logic_vector(width - 1 downto 0);
+    signal w_l_4 : std_logic_vector(width - 1 downto 0);
+    signal w_h_4 : std_logic_vector(width - 1 downto 0);
+    signal w_l_5 : std_logic_vector(width - 1 downto 0);
+    signal w_h_5 : std_logic_vector(width - 1 downto 0);
+    signal w_l_6 : std_logic_vector(width - 1 downto 0);
+    signal w_h_6 : std_logic_vector(width - 1 downto 0);
+    signal w_l_7 : std_logic_vector(width - 1 downto 0);
+    signal w_h_7 : std_logic_vector(width - 1 downto 0);
+    signal w_l_8 : std_logic_vector(width - 1 downto 0);
+    signal w_h_8 : std_logic_vector(width - 1 downto 0);
+    signal w_l_9 : std_logic_vector(width - 1 downto 0);
+    signal w_h_9 : std_logic_vector(width - 1 downto 0);
+    signal w_l_10 : std_logic_vector(width - 1 downto 0);
+    signal w_h_10 : std_logic_vector(width - 1 downto 0);
+    signal w_l_11 : std_logic_vector(width - 1 downto 0);
+    signal w_h_11 : std_logic_vector(width - 1 downto 0);
+    signal w_l_12 : std_logic_vector(width - 1 downto 0);
+    signal w_h_12 : std_logic_vector(width - 1 downto 0);
+    signal w_l_13 : std_logic_vector(width - 1 downto 0);
+    signal w_h_13 : std_logic_vector(width - 1 downto 0);
+    signal w_l_14 : std_logic_vector(width - 1 downto 0);
+    signal w_h_14 : std_logic_vector(width - 1 downto 0);
+    signal w_l_15 : std_logic_vector(width - 1 downto 0);
+    signal w_h_15 : std_logic_vector(width - 1 downto 0);
+    signal w_l_16 : std_logic_vector(width - 1 downto 0);
+    signal w_h_16 : std_logic_vector(width - 1 downto 0);
+    signal w_l_17 : std_logic_vector(width - 1 downto 0);
+    signal w_h_17 : std_logic_vector(width - 1 downto 0);
+    signal w_l_18 : std_logic_vector(width - 1 downto 0);
+    signal w_h_18 : std_logic_vector(width - 1 downto 0);
+    signal w_l_19 : std_logic_vector(width - 1 downto 0);
+    signal w_h_19 : std_logic_vector(width - 1 downto 0);
+    signal w_l_20 : std_logic_vector(width - 1 downto 0);
+    signal w_h_20 : std_logic_vector(width - 1 downto 0);
+    signal w_l_21 : std_logic_vector(width - 1 downto 0);
+    signal w_h_21 : std_logic_vector(width - 1 downto 0);
+    signal w_l_22 : std_logic_vector(width - 1 downto 0);
+    signal w_h_22 : std_logic_vector(width - 1 downto 0);
+    signal w_l_23 : std_logic_vector(width - 1 downto 0);
+    signal w_h_23 : std_logic_vector(width - 1 downto 0);
+begin
+    comp_0: entity work.comparator port map(in_A => inputs(0), in_B => inputs(1), dir => '1', out_L => w_l_0, out_H => w_h_0);
+    comp_1: entity work.comparator port map(in_A => inputs(2), in_B => inputs(3), dir => '0', out_L => w_l_1, out_H => w_h_1);
+    comp_2: entity work.comparator port map(in_A => w_l_0, in_B => w_l_1, dir => '1', out_L => w_l_2, out_H => w_h_2);
+    comp_3: entity work.comparator port map(in_A => w_h_0, in_B => w_h_1, dir => '1', out_L => w_l_3, out_H => w_h_3);
+    comp_4: entity work.comparator port map(in_A => w_l_2, in_B => w_l_3, dir => '1', out_L => w_l_4, out_H => w_h_4);
+    comp_5: entity work.comparator port map(in_A => w_h_2, in_B => w_h_3, dir => '1', out_L => w_l_5, out_H => w_h_5);
+    comp_6: entity work.comparator port map(in_A => inputs(4), in_B => inputs(5), dir => '1', out_L => w_l_6, out_H => w_h_6);
+    comp_7: entity work.comparator port map(in_A => inputs(6), in_B => inputs(7), dir => '0', out_L => w_l_7, out_H => w_h_7);
+    comp_8: entity work.comparator port map(in_A => w_l_6, in_B => w_l_7, dir => '0', out_L => w_l_8, out_H => w_h_8);
+    comp_9: entity work.comparator port map(in_A => w_h_6, in_B => w_h_7, dir => '0', out_L => w_l_9, out_H => w_h_9);
+    comp_10: entity work.comparator port map(in_A => w_l_8, in_B => w_l_9, dir => '0', out_L => w_l_10, out_H => w_h_10);
+    comp_11: entity work.comparator port map(in_A => w_h_8, in_B => w_h_9, dir => '0', out_L => w_l_11, out_H => w_h_11);
+    comp_12: entity work.comparator port map(in_A => w_l_4, in_B => w_l_10, dir => '1', out_L => w_l_12, out_H => w_h_12);
+    comp_13: entity work.comparator port map(in_A => w_h_4, in_B => w_h_10, dir => '1', out_L => w_l_13, out_H => w_h_13);
+    comp_14: entity work.comparator port map(in_A => w_l_5, in_B => w_l_11, dir => '1', out_L => w_l_14, out_H => w_h_14);
+    comp_15: entity work.comparator port map(in_A => w_h_5, in_B => w_h_11, dir => '1', out_L => w_l_15, out_H => w_h_15);
+    comp_16: entity work.comparator port map(in_A => w_l_12, in_B => w_l_14, dir => '1', out_L => w_l_16, out_H => w_h_16);
+    comp_17: entity work.comparator port map(in_A => w_l_13, in_B => w_l_15, dir => '1', out_L => w_l_17, out_H => w_h_17);
+    comp_18: entity work.comparator port map(in_A => w_l_16, in_B => w_l_17, dir => '1', out_L => w_l_18, out_H => w_h_18);
+    comp_19: entity work.comparator port map(in_A => w_h_16, in_B => w_h_17, dir => '1', out_L => w_l_19, out_H => w_h_19);
+    comp_20: entity work.comparator port map(in_A => w_h_12, in_B => w_h_14, dir => '1', out_L => w_l_20, out_H => w_h_20);
+    comp_21: entity work.comparator port map(in_A => w_h_13, in_B => w_h_15, dir => '1', out_L => w_l_21, out_H => w_h_21);
+    comp_22: entity work.comparator port map(in_A => w_l_20, in_B => w_l_21, dir => '1', out_L => w_l_22, out_H => w_h_22);
+    comp_23: entity work.comparator port map(in_A => w_h_20, in_B => w_h_21, dir => '1', out_L => w_l_23, out_H => w_h_23);
+    outputs_array(0) <= w_l_18;
+    outputs_array(1) <= w_h_18;
+    outputs_array(2) <= w_l_19;
+    outputs_array(3) <= w_h_19;
+    outputs_array(4) <= w_l_22;
+    outputs_array(5) <= w_h_22;
+    outputs_array(6) <= w_l_23;
+    outputs_array(7) <= w_h_23;
+    outputs <= outputs_array;
+end Behavioral;
