@@ -219,6 +219,7 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
                     width => W_SYSTEM
                 )
                 port map(
+                    clk => CLK100MHZ,
                     inputs => inputs,
                     outputs => outputs
                 );
