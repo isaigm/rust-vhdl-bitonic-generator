@@ -302,8 +302,145 @@ fn generate_comparator_file(width: usize) -> Result<()> {
     Ok(())
 }
 
+fn generate_testbench_file(n: usize, width: usize) -> Result<()> {
+    let mut file = File::create("vhdl/tb_network.vhd")?;
+    
+    let log_n = (n as u32).ilog2();
+    let num_stages = (log_n * (log_n + 1)) / 2;
+    
+    
+    let remaining_wait = if num_stages > 3 { num_stages - 3 } else { 0 };
+
+    let content = format!(
+        indoc! {r#"
+            library IEEE;
+            use IEEE.STD_LOGIC_1164.ALL;
+            use IEEE.NUMERIC_STD.ALL;
+            use work.network_types.all;
+
+            entity tb_network is
+            end entity tb_network;
+
+            architecture testbench of tb_network is
+
+                constant N_TB     : integer := {n};
+                constant WIDTH_TB : integer := {w};
+                constant CLK_PERIOD : time := 10 ns;
+
+                component bitonic_network is
+                    generic ( n : integer; width : integer );
+                    Port ( clk : in std_logic; inputs : in mem; outputs : out mem );
+                end component;
+
+                signal tb_clk     : std_logic := '0';
+                signal tb_inputs  : mem(0 to N_TB - 1)(WIDTH_TB - 1 downto 0) := (others => (others => '0'));
+                signal tb_outputs : mem(0 to N_TB - 1)(WIDTH_TB - 1 downto 0);
+                signal stop_clk   : boolean := false;
+
+                function check_sorted_series(current_out : mem; offset : integer) return boolean is
+                    variable val : integer;
+                begin
+                    for i in 0 to N_TB - 1 loop
+                        val := (i + 1) * 10 + offset;
+                        if current_out(i) /= std_logic_vector(to_unsigned(val, WIDTH_TB)) then
+                            return false;
+                        end if;
+                    end loop;
+                    return true;
+                end function;
+
+            begin
+
+                UUT: bitonic_network
+                    generic map (n => N_TB, width => WIDTH_TB)
+                    port map (clk => tb_clk, inputs => tb_inputs, outputs => tb_outputs);
+
+                clk_process: process
+                begin
+                    while not stop_clk loop
+                        tb_clk <= '0'; wait for CLK_PERIOD / 2;
+                        tb_clk <= '1'; wait for CLK_PERIOD / 2;
+                    end loop;
+                    wait;
+                end process;
+
+                stimulus_process: process
+                begin
+                    report "--- START OF THROUGHPUT TEST (PIPELINE) ---";
+                    
+                    tb_inputs <= (others => (others => '0'));
+                    wait for 5 * CLK_PERIOD; 
+                    wait until falling_edge(tb_clk);
+
+                    report "Input T=0: Sending Series A (ending in 0)";
+                    for i in 0 to N_TB - 1 loop
+                        tb_inputs(i) <= std_logic_vector(to_unsigned((N_TB - i) * 10, WIDTH_TB));
+                    end loop;
+                    wait until rising_edge(tb_clk);
+
+                    report "Input T=1: Sending Series B (ending in 1)";
+                    for i in 0 to N_TB - 1 loop
+                        tb_inputs(i) <= std_logic_vector(to_unsigned((N_TB - i) * 10 + 1, WIDTH_TB));
+                    end loop;
+                    wait until rising_edge(tb_clk);
+
+                    report "Input T=2: Sending Series C (ending in 2)";
+                    for i in 0 to N_TB - 1 loop
+                        tb_inputs(i) <= std_logic_vector(to_unsigned((N_TB - i) * 10 + 2, WIDTH_TB));
+                    end loop;
+                    wait until rising_edge(tb_clk);
+
+                    tb_inputs <= (others => (others => '0'));
+
+                    report "Waiting for pipeline propagation ({total_latency} total stages)...";
+                    for k in 1 to {remaining_wait} loop
+                        wait until rising_edge(tb_clk);
+                    end loop;
+                    
+                    wait for 1 ns; 
+                    if check_sorted_series(tb_outputs, 0) then
+                        report "--> SUCCESS [Cycle {total_latency}]: Series A correctly detected at output.";
+                    else
+                        report "FAILURE [Cycle {total_latency}]: Expected Series A." severity error;
+                    end if;
+
+                    wait until rising_edge(tb_clk);
+                    wait for 1 ns;
+                    if check_sorted_series(tb_outputs, 1) then
+                        report "--> SUCCESS [Cycle {total_latency_plus_1}]: Series B correctly detected (1 cycle later).";
+                    else
+                        report "FAILURE [Cycle {total_latency_plus_1}]: Expected Series B." severity error;
+                    end if;
+
+                    wait until rising_edge(tb_clk);
+                    wait for 1 ns;
+                    if check_sorted_series(tb_outputs, 2) then
+                        report "--> SUCCESS [Cycle {total_latency_plus_2}]: Series C correctly detected (1 cycle later).";
+                    else
+                        report "FAILURE [Cycle {total_latency_plus_2}]: Expected Series C." severity error;
+                    end if;
+
+                    report "--- END OF TEST ---";
+                    stop_clk <= true;
+                    wait;
+
+                end process;
+            end architecture testbench;
+        "#},
+        n = n,
+        w = width,
+        total_latency = num_stages,
+        remaining_wait = remaining_wait,
+        total_latency_plus_1 = num_stages + 1,
+        total_latency_plus_2 = num_stages + 2
+    );
+
+    file.write_all(content.as_bytes())?;
+    Ok(())
+}
+
 fn main() -> Result<()> {
-    let n = 8;
+    let n = 8; 
     let data_width = 16;
 
     fs::create_dir_all("vhdl")?;
@@ -322,5 +459,9 @@ fn main() -> Result<()> {
 
     generate_comparator_file(data_width)?;
     println!("-> 'comparator.vhd' generated.");
+
+    generate_testbench_file(n, data_width)?;
+    println!("-> 'tb_network.vhd' generated.");
+
     Ok(())
 }
