@@ -479,7 +479,7 @@ fn main() -> Result<()> {
     generate_comparator_file(data_width)?;
     println!("-> 'comparator.vhd' generated.");
 
-    // Generamos el testbench dinámico
+    
     generate_testbench_file(n, data_width)?;
     println!("-> 'tb_network.vhd' generated.");
 
