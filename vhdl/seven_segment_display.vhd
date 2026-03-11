@@ -20,14 +20,12 @@ architecture Behavioral of seven_segment_display is
    
     type digit_type is (DIGIT1, DIGIT2, DIGIT3, DIGIT4);
     signal digit          : digit_type                   := DIGIT1;
-    signal enable_encoder : std_logic                    := '0';
     signal s_digit        : std_logic_vector(3 downto 0) := (others => '0'); 
     
 begin
 
     ss_encoder: entity work.seven_segment_encoder 
         port map (
-            enable   => enable_encoder, 
             digit    => s_digit, 
             segments => s_segments
         );
@@ -37,7 +35,6 @@ begin
         if rising_edge(clk) then
             if s_counter >= cycles then
                 s_counter      <= (others => '0');
-                enable_encoder <= '1';
                 
                 case digit is
                     when DIGIT1 =>
@@ -61,7 +58,6 @@ begin
                         digit   <= DIGIT1;
                 end case;
             else
-                
                 s_counter <= s_counter + 1;        
             end if;
         end if;
