@@ -1,9 +1,9 @@
+
 # Bitonic Sorting Network Hardware Generator (Rust to VHDL)
 
 ![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
 ![VHDL](https://img.shields.io/badge/VHDL-00599C?style=for-the-badge&logo=v&logoColor=white)
 ![FPGA](https://img.shields.io/badge/FPGA-Xilinx_Artix--7-red?style=for-the-badge)
-
 
 A custom Electronic Design Automation (EDA) tool written in **Rust** that dynamically generates synthesizable, fully-pipelined **VHDL** code for a Bitonic Sorting Network. The project includes a complete hardware wrapper to test the generated core on a **Basys 3 (Artix-7) FPGA** using a 7-segment display.
 
@@ -58,17 +58,24 @@ This will execute `src/main.rs`, calculate the comparator topology for $N=8$ (co
 4. Add your Basys 3 `.xdc` constraints file (mapping the clock, buttons, and 7-segment display pins).
 5. Generate the bitstream and program the device.
 
-## 🛠️ Hardware implementation details
-While the Bitonic Network core is highly efficient and consumes very few LUTs, interfacing it with human-readable outputs requires significant logic. The hand-written `binary_to_bcd.vhd` utilizes the **Double Dabble** algorithm to convert the binary outputs into decimal format, which is then multiplexed across the 4-digit 7-segment display of the Basys 3.
+## ⚠️ Synthesis optimization note 
+If you synthesize the generated code exactly as it comes out of the Rust tool, you might notice an abnormally low LUT/FF utilization in Vivado's reports. 
+
+This happens because the Rust generator hardcodes the random input numbers into the `inputs` array inside `sorter.vhd`. Vivado's synthesizer is smart enough to perform **Constant Propagation**: it realizes that if the inputs never change, the sorting result will always be the same. Therefore, Vivado pre-calculates the sorted array during synthesis, deletes all the physical comparators and pipeline flip-flops, and replaces the entire Bitonic Network with hardwired constants connected to VCC/GND.
+
+**To force Vivado to build the actual physical sorting network**, you must ensure the inputs are dynamic (not known at compile time). You can do this by mapping at least one of the inputs to the physical switches of the FPGA, or by feeding the network with a continuously running LFSR. 
+
+For example, in `sorter.vhd`:
+```vhdl
+-- Replace a hardcoded constant with a dynamic physical input
+inputs(0) <= sw(15 downto 0); 
+```
+Once the inputs are dynamic, Vivado will be forced to synthesize the full parallel comparator topology and the shift registers.
 
 # Schematic 
 <img width="1895" height="822" alt="schematic" src="https://github.com/user-attachments/assets/403f3cd3-c946-4775-8db4-4ab7fd010329" />
 
 # Demo 
 
-
 https://github.com/user-attachments/assets/e1b378c0-61e1-4eb9-aae4-9ef5a4467ed5
-
-
-
-
+```
