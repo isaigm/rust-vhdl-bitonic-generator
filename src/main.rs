@@ -175,7 +175,7 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
 
     println!("--- Generated numbers ---");
     for _ in 0..n {
-        let num = rng.random_range(0..=max_val);
+        let num = rng.random_range(0..=9999);
         print!("{} ", num);
         random_numbers_vhdl.push(format!("std_logic_vector(to_unsigned({}, {}))", num, width));
     }
@@ -194,6 +194,8 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
                 Port (
                     CLK100MHZ: in std_logic;
                     btnR: in std_logic;
+                    seg: out std_logic_vector(6 downto 0);
+                    an: out std_logic_vector(3 downto 0);
                     LED: out std_logic_vector(15 downto 0)
                  );
             end sorter;
@@ -211,6 +213,10 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
                 signal enabled: std_logic := '0';
                 signal idx: integer range 0 to N_SYSTEM - 1 := 0;
                 signal led_reg: std_logic_vector(15 downto 0) := (others => '0');
+                signal start: std_logic := '0';
+                signal output_number: std_logic_vector(15 downto 0) := (others => '0');
+                signal ready: std_logic := '0';
+                signal reset: std_logic := '0';
 
             begin
                 network: entity work.bitonic_network
@@ -224,13 +230,20 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
                     outputs => outputs
                 );
 
-                push_btn: entity work.push_btn port map(CLk100MHZ => CLK100MHZ, btn => btnR, enabled => enabled);
-
+                push_btn: entity work.push_btn port map(clk => CLK100MHZ, btn => btnR, enabled => enabled);
+                binary_to_bcd: entity work.binary_to_bcd port map(clk => CLK100MHZ,
+                reset => reset,
+                start => start,
+                input_number => led_reg,
+                output_number => output_number,
+                ready => ready);
+                display: entity work.seven_segment_display port map(clk => CLK100MHZ,
+                number => output_number, seg => seg, an => an );
                 process (CLK100MHZ)
                 begin
                     if rising_edge(CLK100MHZ) then
                         if enabled = '1' then
-
+                            start <= '1';
                             led_reg <= std_logic_vector(resize(unsigned(outputs(idx)), 16));
 
                             if idx = N_SYSTEM - 1 then
@@ -238,6 +251,8 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
                             else
                                 idx <= idx + 1;
                             end if;
+                        else
+                            start <= '0';
                         end if;
                     end if;
                 end process;
@@ -256,6 +271,7 @@ fn generate_sorter_file(n: usize, width: usize) -> Result<()> {
 
 fn generate_comparator_file(width: usize) -> Result<()> {
     let mut file = File::create("vhdl/comparator.vhd")?;
+    let symbols : [[char; 2]; 2] = [['<', '>'], ['>', '<']];
     let content = format!(
         indoc! {r#"
             library IEEE;
@@ -302,13 +318,16 @@ fn generate_comparator_file(width: usize) -> Result<()> {
     Ok(())
 }
 
+// NUEVA FUNCIÓN: Genera el Testbench dinámicamente según N
 fn generate_testbench_file(n: usize, width: usize) -> Result<()> {
     let mut file = File::create("vhdl/tb_network.vhd")?;
-    
+
+    // Calcular la latencia exacta matemáticamente
     let log_n = (n as u32).ilog2();
     let num_stages = (log_n * (log_n + 1)) / 2;
-    
-    
+
+    // Como inyectamos 3 series (T=0, T=1, T=2), gastamos 3 ciclos.
+    // El testbench debe esperar el resto de los ciclos.
     let remaining_wait = if num_stages > 3 { num_stages - 3 } else { 0 };
 
     let content = format!(
@@ -367,9 +386,9 @@ fn generate_testbench_file(n: usize, width: usize) -> Result<()> {
                 stimulus_process: process
                 begin
                     report "--- START OF THROUGHPUT TEST (PIPELINE) ---";
-                    
+
                     tb_inputs <= (others => (others => '0'));
-                    wait for 5 * CLK_PERIOD; 
+                    wait for 5 * CLK_PERIOD;
                     wait until falling_edge(tb_clk);
 
                     report "Input T=0: Sending Series A (ending in 0)";
@@ -396,8 +415,8 @@ fn generate_testbench_file(n: usize, width: usize) -> Result<()> {
                     for k in 1 to {remaining_wait} loop
                         wait until rising_edge(tb_clk);
                     end loop;
-                    
-                    wait for 1 ns; 
+
+                    wait for 1 ns;
                     if check_sorted_series(tb_outputs, 0) then
                         report "--> SUCCESS [Cycle {total_latency}]: Series A correctly detected at output.";
                     else
@@ -450,7 +469,7 @@ fn main() -> Result<()> {
 
     vhdl_writer.write_start()?;
     vhdl_writer.write_wires()?;
-    bitonic_sort_helper(&mut vhdl_writer, n as usize, 0, 1)?;
+    bitonic_sort_helper(&mut vhdl_writer, n as usize, 0, 0)?;
     vhdl_writer.write_end()?;
     println!("-> 'bitonic_network.vhd' generated.");
 
@@ -460,6 +479,7 @@ fn main() -> Result<()> {
     generate_comparator_file(data_width)?;
     println!("-> 'comparator.vhd' generated.");
 
+    // Generamos el testbench dinámico
     generate_testbench_file(n, data_width)?;
     println!("-> 'tb_network.vhd' generated.");
 
